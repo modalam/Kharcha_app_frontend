@@ -5,6 +5,7 @@ import { formatCurrency } from "@/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/api-client";
+import { CategoryPieChart } from "@/components/charts/category-pie-chart";
 import {
   BarChart,
   Bar,
@@ -15,9 +16,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 
 export default function AnalyticsPage() {
@@ -46,11 +44,19 @@ export default function AnalyticsPage() {
       <h1 className="text-2xl font-bold">Analytics</h1>
 
       <Tabs defaultValue="monthly">
-        <TabsList className="flex flex-wrap">
-          <TabsTrigger value="monthly">Monthly</TabsTrigger>
-          <TabsTrigger value="weekly">Weekly</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="payment">Payment Methods</TabsTrigger>
+        <TabsList className="flex h-auto w-full max-w-full justify-start gap-1 overflow-x-auto p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsTrigger value="monthly" className="shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm">
+            Monthly
+          </TabsTrigger>
+          <TabsTrigger value="weekly" className="shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm">
+            Weekly
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm">
+            Categories
+          </TabsTrigger>
+          <TabsTrigger value="payment" className="shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm">
+            Payment
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="monthly">
@@ -91,24 +97,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader><CardTitle>Category Breakdown</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <PieChart>
-                  <Pie
-                    data={categories ?? []}
-                    dataKey="amount"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={120}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {(categories ?? []).map((entry, i) => (
-                      <Cell key={i} fill={entry.color ?? `hsl(${i * 40}, 70%, 50%)`} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                </PieChart>
-              </ResponsiveContainer>
+              <CategoryPieChart data={categories ?? []} height={220} />
             </CardContent>
           </Card>
         </TabsContent>

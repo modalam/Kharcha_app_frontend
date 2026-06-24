@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/badge";
 import { apiFetch } from "@/lib/api-client";
 import type { DashboardData } from "@/shared";
+import { CategoryPieChart } from "@/components/charts/category-pie-chart";
 import {
   LineChart,
   Line,
@@ -14,9 +15,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 
 export default function DashboardPage() {
@@ -91,24 +89,7 @@ export default function DashboardPage() {
             <CardTitle className="text-lg">Top Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={data?.widgets.topCategories ?? []}
-                  dataKey="amount"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label={({ name }) => name}
-                >
-                  {(data?.widgets.topCategories ?? []).map((entry, i) => (
-                    <Cell key={i} fill={entry.color ?? `hsl(${i * 40}, 70%, 50%)`} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-              </PieChart>
-            </ResponsiveContainer>
+            <CategoryPieChart data={data?.widgets.topCategories ?? []} />
           </CardContent>
         </Card>
       </div>
