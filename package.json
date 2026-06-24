@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "pages:deploy": "pnpm build && wrangler pages deploy",
+    "pages:deploy": "pnpm build && wrangler pages deploy out --project-name=kharcha-app --branch=kharcha-app",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
