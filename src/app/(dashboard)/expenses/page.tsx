@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { formatCurrency, PAYMENT_METHODS, type Category, type Expense, type PaginatedResponse } from "@/shared";
+import { formatCurrency, todayLocalISO, PAYMENT_METHODS, type Category, type Expense, type PaginatedResponse } from "@/shared";
 import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -215,7 +215,7 @@ function ExpenseForm({
   const [amount, setAmount] = useState(expense?.amount?.toString() ?? "");
   const [categoryId, setCategoryId] = useState(expense?.categoryId ?? "");
   const [expenseDate, setExpenseDate] = useState(
-    expense?.expenseDate ?? new Date().toISOString().split("T")[0]
+    expense?.expenseDate ?? todayLocalISO()
   );
   const [notes, setNotes] = useState(expense?.notes ?? "");
   const [paymentMethod, setPaymentMethod] = useState(expense?.paymentMethod ?? "");

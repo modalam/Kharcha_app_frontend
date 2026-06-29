@@ -20,7 +20,8 @@ import {
 export default function DashboardPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
-    queryFn: () => apiFetch<DashboardData>("/api/dashboard"),
+    queryFn: () =>
+      apiFetch<DashboardData>(`/api/dashboard?tz=${new Date().getTimezoneOffset()}`),
   });
 
   if (isLoading) {

@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { DailyJournal, PaginatedResponse } from "@/shared";
-import { formatDate } from "@/shared";
+import { formatDate, todayLocalISO } from "@/shared";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +23,7 @@ export default function JournalPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<DailyJournal | null>(null);
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayLocalISO();
 
   const { data, isLoading } = useQuery({
     queryKey: ["journals"],
@@ -144,7 +144,7 @@ function JournalForm({
   onSuccess: () => void;
 }) {
   const [journalDate, setJournalDate] = useState(
-    journal?.journalDate ?? new Date().toISOString().split("T")[0]
+    journal?.journalDate ?? todayLocalISO()
   );
   const [notes, setNotes] = useState(journal?.notes ?? "");
   const [loading, setLoading] = useState(false);

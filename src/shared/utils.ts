@@ -21,6 +21,16 @@ export function toISODate(date: string | Date): string {
   return d.toISOString().split("T")[0];
 }
 
+// Local calendar date as YYYY-MM-DD (avoids the UTC shift of toISOString,
+// so "today" matches the user's wall clock instead of the UTC date).
+export function todayLocalISO(): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function getStartOfWeek(date: Date = new Date()): string {
   const d = new Date(date);
   const day = d.getDay();
