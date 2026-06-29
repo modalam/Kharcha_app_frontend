@@ -8,6 +8,42 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+// Compact currency for chart axes, e.g. 36173 -> "₹36K".
+export function formatCompactCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: CURRENCY,
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+// Turns a "YYYY-MM" key into a friendly label like "Jun 2026".
+export function formatMonthLabel(month: string): string {
+  const [year, m] = month.split("-");
+  const idx = Number(m) - 1;
+  if (!year || Number.isNaN(idx) || !MONTH_NAMES[idx]) return month;
+  return `${MONTH_NAMES[idx]} ${year}`;
+}
+
+// Turns a "YYYY-Www" key (SQLite strftime) into a short label like "Wk 26".
+export function formatWeekLabel(week: string): string {
+  const match = week.match(/W(\d+)/);
+  return match ? `Wk ${Number(match[1])}` : week;
+}
+
+// Turns a "YYYY-MM-DD" key into a short axis label like "29 Jun".
+export function formatShortDate(date: string): string {
+  const [, m, d] = date.split("-").map(Number);
+  if (!m || !d || !MONTH_NAMES[m - 1]) return date;
+  return `${d} ${MONTH_NAMES[m - 1]}`;
+}
+
 export function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const day = String(d.getDate()).padStart(2, "0");

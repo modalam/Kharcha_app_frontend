@@ -2,6 +2,7 @@
 
 import { formatCurrency } from "@/shared";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { ChartTooltip } from "./chart-tooltip";
 
 type PieDataItem = {
   name: string;
@@ -41,7 +42,7 @@ export function CategoryPieChart({ data, height = 200 }: CategoryPieChartProps) 
               <Cell key={entry.name} fill={entry.color ?? `hsl(${i * 40}, 70%, 50%)`} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: number) => formatCurrency(v)} />
+          <Tooltip content={<ChartTooltip labelKey="name" />} />
         </PieChart>
       </ResponsiveContainer>
 

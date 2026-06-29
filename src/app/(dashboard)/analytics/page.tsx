@@ -1,22 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { formatCurrency } from "@/shared";
+import { formatWeekLabel } from "@/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/api-client";
 import { CategoryPieChart } from "@/components/charts/category-pie-chart";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { MonthlyBarChart } from "@/components/charts/monthly-bar-chart";
+import { PaymentBarChart } from "@/components/charts/payment-bar-chart";
+import { TrendLineChart } from "@/components/charts/trend-line-chart";
 
 export default function AnalyticsPage() {
   const { data: monthly } = useQuery({
@@ -63,15 +55,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader><CardTitle>Monthly Spending Trend</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={monthly ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Bar dataKey="amount" fill="hsl(142 76% 36%)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <MonthlyBarChart data={monthly ?? []} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -80,15 +64,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader><CardTitle>Weekly Spending Trend</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={weekly ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Line type="monotone" dataKey="amount" stroke="hsl(142 76% 36%)" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+              <TrendLineChart data={weekly ?? []} xKey="week" labelFormatter={formatWeekLabel} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -106,15 +82,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader><CardTitle>Payment Method Breakdown</CardTitle></CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={paymentMethods ?? []} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} />
-                  <YAxis dataKey="method" type="category" tick={{ fontSize: 12 }} width={100} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Bar dataKey="amount" fill="hsl(142 76% 36%)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <PaymentBarChart data={paymentMethods ?? []} />
             </CardContent>
           </Card>
         </TabsContent>

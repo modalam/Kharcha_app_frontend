@@ -1,21 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { formatCurrency } from "@/shared";
+import { formatCurrency, formatShortDate } from "@/shared";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/badge";
 import { apiFetch } from "@/lib/api-client";
 import type { DashboardData } from "@/shared";
 import { CategoryPieChart } from "@/components/charts/category-pie-chart";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { TrendLineChart } from "@/components/charts/trend-line-chart";
 
 export default function DashboardPage() {
   const { data, isLoading } = useQuery({
@@ -73,15 +65,12 @@ export default function DashboardPage() {
             <CardTitle className="text-lg">Spending Trend (30 days)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={data?.widgets.spendingTrend ?? []}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Line type="monotone" dataKey="amount" stroke="hsl(142 76% 36%)" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
+            <TrendLineChart
+              data={data?.widgets.spendingTrend ?? []}
+              xKey="date"
+              height={250}
+              labelFormatter={formatShortDate}
+            />
           </CardContent>
         </Card>
 
