@@ -1,9 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatCurrency, todayLocalISO, PAYMENT_METHODS, type Category, type Expense, type PaginatedResponse } from "@/shared";
-import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,9 @@ export default function ExpensesPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [importError, setImportError] = useState("");
+  const [importSummary, setImportSummary] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const queryParams = new URLSearchParams({
     page: String(page),
@@ -78,6 +81,57 @@ export default function ExpensesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["expenses"] }),
   });
 
+  const bulkImportMutation = useMutation({
+    mutationFn: (items: Array<{
+      title: string;
+      amount: number;
+      categoryId: string;
+      expenseDate: string;
+      subcategory?: string;
+      notes?: string;
+      paymentMethod?: string;
+    }>) => apiFetch<{ count: number }>("/api/expenses/bulk", {
+      method: "POST",
+      body: JSON.stringify({ expenses: items }),
+    }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      setImportSummary(`Imported ${result.count} expenses successfully.`);
+      setImportError("");
+    },
+    onError: (err) => {
+      setImportError(err instanceof Error ? err.message : "Import failed");
+      setImportSummary("");
+    },
+  });
+
+  const handleImportClick = () => {
+    setImportError("");
+    setImportSummary("");
+    fileInputRef.current?.click();
+  };
+
+  const handleCsvImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parseResult = parseExpenseCsv(text, categories ?? []);
+      if (parseResult.errors.length > 0) {
+        setImportError(parseResult.errors.slice(0, 8).join(" "));
+        setImportSummary("");
+        return;
+      }
+      await bulkImportMutation.mutateAsync(parseResult.rows);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Failed to read file");
+      setImportSummary("");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
   const toggleSelect = (id: string) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
@@ -86,27 +140,56 @@ export default function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Expenses</h1>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditing(null); }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />Add Expense</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editing ? "Edit Expense" : "New Expense"}</DialogTitle>
-            </DialogHeader>
-            <ExpenseForm
-              categories={categories ?? []}
-              expense={editing}
-              onSuccess={() => {
-                setDialogOpen(false);
-                setEditing(null);
-                queryClient.invalidateQueries({ queryKey: ["expenses"] });
-                queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="sr-only"
+            onChange={handleCsvImport}
+          />
+          <Button
+            variant="outline"
+            className="h-11 w-full sm:w-auto"
+            onClick={handleImportClick}
+            disabled={bulkImportMutation.isPending}
+          >
+            <Upload className="h-4 w-4" />
+            {bulkImportMutation.isPending ? "Importing..." : "Import CSV"}
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditing(null); }}>
+            <DialogTrigger asChild>
+              <Button className="h-11 w-full sm:w-auto">
+                <Plus className="h-4 w-4" />
+                Add Expense
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editing ? "Edit Expense" : "New Expense"}</DialogTitle>
+              </DialogHeader>
+              <ExpenseForm
+                categories={categories ?? []}
+                expense={editing}
+                onSuccess={() => {
+                  setDialogOpen(false);
+                  setEditing(null);
+                  queryClient.invalidateQueries({ queryKey: ["expenses"] });
+                  queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+      <p className="text-xs leading-relaxed text-muted-foreground sm:hidden">
+        CSV needs: title, amount, date, category. Optional: subcategory, paymentMethod, notes.
+      </p>
+      <p className="hidden text-xs text-muted-foreground sm:block">
+        CSV headers: title, amount, date, category, subcategory, paymentMethod, notes
+      </p>
+      {importError && <p className="break-words text-sm text-destructive">{importError}</p>}
+      {importSummary && <p className="break-words text-sm text-emerald-600">{importSummary}</p>}
 
       <Card>
         <CardHeader>
@@ -200,6 +283,116 @@ export default function ExpensesPage() {
       )}
     </div>
   );
+}
+
+type ParsedCsvResult = {
+  rows: Array<{
+    title: string;
+    amount: number;
+    categoryId: string;
+    expenseDate: string;
+    subcategory?: string;
+    notes?: string;
+    paymentMethod?: string;
+  }>;
+  errors: string[];
+};
+
+function parseExpenseCsv(rawCsv: string, categories: Category[]): ParsedCsvResult {
+  const lines = rawCsv
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return { rows: [], errors: ["CSV must include a header and at least one row."] };
+  }
+
+  const headers = splitCsvLine(lines[0]).map((header) => normalizeHeader(header));
+  const categoryByName = new Map(categories.map((category) => [category.name.toLowerCase(), category.id]));
+  const rows: ParsedCsvResult["rows"] = [];
+  const errors: string[] = [];
+
+  for (let i = 1; i < lines.length; i += 1) {
+    const values = splitCsvLine(lines[i]);
+    const row = Object.fromEntries(headers.map((header, idx) => [header, (values[idx] ?? "").trim()]));
+    const lineNumber = i + 1;
+    const title = row.title;
+    const amount = Number(row.amount);
+    const expenseDate = normalizeDate(row.date || row.expensedate);
+    const categoryName = (row.category || "").toLowerCase();
+    const categoryId = categoryByName.get(categoryName);
+    const paymentMethod = row.paymentmethod;
+
+    if (!title) errors.push(`Line ${lineNumber}: title is required.`);
+    if (!Number.isFinite(amount) || amount <= 0) errors.push(`Line ${lineNumber}: amount must be a positive number.`);
+    if (!expenseDate) errors.push(`Line ${lineNumber}: date must be in YYYY-MM-DD or DD/MM/YYYY format.`);
+    if (!categoryId) errors.push(`Line ${lineNumber}: category "${row.category || ""}" not found.`);
+    if (paymentMethod && !PAYMENT_METHODS.includes(paymentMethod as (typeof PAYMENT_METHODS)[number])) {
+      errors.push(`Line ${lineNumber}: paymentMethod must be one of ${PAYMENT_METHODS.join(", ")}.`);
+    }
+
+    if (!title || !categoryId || !expenseDate || !Number.isFinite(amount) || amount <= 0) {
+      continue;
+    }
+
+    rows.push({
+      title,
+      amount,
+      categoryId,
+      expenseDate,
+      subcategory: row.subcategory || undefined,
+      notes: row.notes || undefined,
+      paymentMethod: paymentMethod || undefined,
+    });
+  }
+
+  if (rows.length > 500) {
+    errors.push("A single import supports up to 500 rows.");
+  }
+
+  return { rows: rows.slice(0, 500), errors };
+}
+
+function splitCsvLine(line: string): string[] {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    if (char === '"' && line[i + 1] === '"') {
+      current += '"';
+      i += 1;
+      continue;
+    }
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (char === "," && !inQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  values.push(current);
+  return values;
+}
+
+function normalizeHeader(header: string): string {
+  return header.toLowerCase().replace(/[\s_]+/g, "");
+}
+
+function normalizeDate(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const [, dd, mm, yyyy] = match;
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function ExpenseForm({
