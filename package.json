@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "pages:deploy": "pnpm build && wrangler pages deploy out --project-name=kharcha-app --branch=kharcha-app",
+    "pages:deploy": "NEXT_PUBLIC_API_URL=https://kharcha-api.modassiralam92.workers.dev NEXT_PUBLIC_CHAT_API_URL=https://ai-chatboat-api.modassiralam92.workers.dev pnpm build && wrangler pages deploy out --project-name=kharcha-app --branch=kharcha-app --commit-dirty=true",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },

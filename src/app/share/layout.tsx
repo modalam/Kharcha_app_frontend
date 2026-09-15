@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import { PreLoginAssistant } from "@/components/pre-login-assistant";
 
 export const metadata: Metadata = {
   title: "Kharcha Journal — Share & Install",
@@ -11,6 +13,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ShareLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default function ShareLayout({ children }: { children: ReactNode }) {
+  return (
+    <>
+      {children}
+      <PreLoginAssistant />
+    </>
+  );
 }
